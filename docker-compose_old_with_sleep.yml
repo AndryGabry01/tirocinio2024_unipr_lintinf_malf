@@ -1,0 +1,53 @@
+services:
+  cardinal:
+    build: 
+      context: ./Container/CardinalApi  
+    user: "node" 
+    ports:
+      - "3000:3000"
+    command: sh -c "sleep 10 && npm start" 
+    depends_on:
+      - redis  
+  
+  irrinet:
+    build: 
+      context: ./Container/IrrinetBot 
+    user: "node" 
+    ports:
+      - "3001:3000"
+    environment:
+      - IR_EMAIL=[irrinetmail]
+      - IR_PASSWORD=[irrinetpasswd]
+    command: sh -c "sleep 15 && npm start" 
+    depends_on:
+      - cardinal  
+
+  telegram:
+    build: 
+      context: ./Container/TelegramBot    
+    user: "node" 
+    environment:
+      - API_TOKEN=[telegram token]
+    ports:
+      - "3002:3000"
+    command: sh -c "sleep 15 && npm start" 
+    depends_on:
+      - cardinal  
+
+  cloudflared:
+    image: wisdomsky/cloudflared-web:latest
+    restart: unless-stopped
+    network_mode: host
+    depends_on:
+        - redis  
+
+  redis:
+    build: 
+      context: ./Container/Redis 
+    ports:
+      - "6379:6379"  
+    volumes:
+      - redis-data:/data 
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]  
+volumes:
+    redis-data:  
